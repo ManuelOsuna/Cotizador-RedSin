@@ -1,0 +1,1024 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>REDSIN - Cotizador de Seguridad Electrónica</title>
+    <!-- Tailwind CSS for modern responsive styles -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Tailwind Custom Configuration for REDSIN Theme -->
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        navyPrimary: '#0F172A',
+                        navySecondary: '#1E293B',
+                        redBtn: '#FF0D00',
+                        darkCanvas: '#0B0F19',
+                        softBorder: '#334155',
+                        textLight: '#F8FAFC',
+                        textMuted: '#94A3B8',
+                        securityAmber: '#F59E0B'
+                    }
+                }
+            }
+        }
+    </script>
+    <!-- Lucide Icons for aesthetic pairing -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;600;700&family=JetBrains+Mono:wght@400;700&family=Inter:wght@300;400;600;700;900&display=swap');
+        
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #0B0F19;
+            color: #F8FAFC;
+        }
+        
+        .title-font {
+            font-family: 'Space Grotesk', sans-serif;
+        }
+
+        .mono-font {
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        /* Screen-only view limits */
+        @media screen {
+            .scrollbar-hide::-webkit-scrollbar {
+                display: none;
+            }
+            .scrollbar-hide {
+                -ms-overflow-style: none;
+                scrollbar-width: none;
+            }
+        }
+
+        /* Print Media Styles for High-Fidelity Official PDF representation */
+        @media print {
+            body {
+                background: white !important;
+                color: black !important;
+            }
+            .no-print {
+                display: none !important;
+            }
+            .print-only {
+                display: block !important;
+            }
+            .printable-sheet {
+                width: 100% !important;
+                max-width: 100% !important;
+                margin: 0 !important;
+                padding: 0 !important;
+                border: none !important;
+                box-shadow: none !important;
+                background-color: white !important;
+                color: #000000 !important;
+            }
+            /* Reset colors specifically for standard monochrome printer friendly output */
+            .printable-sheet * {
+                color: #0F172A !important;
+            }
+            .brand-red, .text-redBtn {
+                color: #FF0D00 !important;
+            }
+            .bg-redBtn {
+                background-color: #FF0D00 !important;
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
+            }
+            .bg-navyPrimary {
+                background-color: #0F172A !important;
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
+            }
+            .bg-navyPrimary-text {
+                color: white !important;
+            }
+            .bg-light-gray {
+                background-color: #F8F9FF !important;
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
+            }
+            .border-soft {
+                border-color: #CBD5E1 !important;
+            }
+            @page {
+                size: letter;
+                margin: 15mm;
+            }
+        }
+    </style>
+</head>
+<body class="min-h-screen pb-12">
+
+    <!-- HEADER / NAVIGATION (no-print) -->
+    <header class="no-print bg-navyPrimary border-b border-soft py-4 px-6 sticky top-0 z-30 shadow-lg">
+        <div class="max-w-6xl mx-auto flex flex-col md:flex-row justify-between items-center gap-4">
+            <div class="flex items-center gap-3">
+                <!-- RedSin Logo (Vector Shield matching Android) -->
+                <img src="/img/Logo_Blanco.png" alt="Mi Logo" class="w-10 h-10 object-contain" />
+                <div>
+                    <h1 class="title-font text-xl font-black tracking-wider text-textLight">REDSIN</h1>
+                    <p class="text-[8px] font-bold text-textMuted tracking-widest uppercase">Seguridad Electrónica</p>
+                </div>
+            </div>
+            
+            <!-- Quick View navigation controls -->
+            <div class="flex items-center gap-2 bg-darkCanvas p-1 border border-soft rounded-lg">
+                <button onclick="switchTab('crear')" id="tab-crear" class="tab-btn px-4 py-2 text-xs font-bold rounded-md bg-redBtn text-white transition-all flex items-center gap-1">
+                    <i data-lucide="plus-circle" class="w-3.5 h-3.5"></i>
+                    Crear Cotización
+                </button>
+                <button onclick="switchTab('lista')" id="tab-lista" class="tab-btn px-4 py-2 text-xs font-bold rounded-md text-textMuted hover:text-textLight transition-all flex items-center gap-1">
+                    <i data-lucide="file-text" class="w-3.5 h-3.5"></i>
+                    Historial / Propuestas <span id="quote-count" class="bg-navySecondary border border-soft px-1.5 py-0.5 text-[9px] rounded ml-1 text-redBtn">0</span>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- CONTENT WRAPPER -->
+    <main class="max-w-6xl mx-auto px-4 mt-6">
+        
+        <!-- SECTION 1: CREAR COTIZACIÓN (no-print) -->
+        <div id="sec-crear" class="no-print grid grid-cols-1 lg:grid-cols-12 gap-8">
+            <!-- Left Side controls: Client Info and Equipment adding -->
+            <div class="lg:col-span-7 flex flex-col gap-6">
+                <!-- Cliente Info Card -->
+                <div class="bg-navySecondary border border-soft rounded-xl p-5 shadow-md">
+                    <div class="flex items-center justify-between mb-4">
+                        <h2 class="title-font text-md font-bold text-textLight flex items-center gap-2">
+                            <i data-lucide="user" class="text-redBtn w-4 h-4"></i>
+                            Información del Cliente
+                        </h2>
+                        <button onclick="clearDraft()" class="text-xs text-textMuted hover:text-redBtn flex items-center gap-1 transition-colors">
+                            <i data-lucide="trash-2" class="w-3 h-3"></i> Limpiar Todo
+                        </button>
+                    </div>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div class="md:col-span-2">
+                            <label class="block text-[10px] font-bold text-textMuted uppercase mb-1">Nombre Completo</label>
+                            <input type="text" id="client-name" placeholder="Ej. Juan Pérez" class="w-full bg-darkCanvas border border-soft text-textLight rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-redBtn">
+                        </div>
+                        <div>
+                            <label class="block text-[10px] font-bold text-textMuted uppercase mb-1">Teléfono</label>
+                            <input type="text" id="client-phone" placeholder="Ej. 6671234567" class="w-full bg-darkCanvas border border-soft text-textLight rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-redBtn">
+                        </div>
+                        <div>
+                            <label class="block text-[10px] font-bold text-textMuted uppercase mb-1">Correo Electrónico</label>
+                            <input type="email" id="client-email" placeholder="Ej. cliente@correo.com" class="w-full bg-darkCanvas border border-soft text-textLight rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-redBtn">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Add Items Form & Catalog Explorer -->
+                <div class="bg-navySecondary border border-soft rounded-xl p-5 shadow-md flex flex-col gap-4">
+                    <h2 class="title-font text-md font-bold text-textLight flex items-center gap-2">
+                        <i data-lucide="package" class="text-redBtn w-4 h-4"></i>
+                        Añadir Equipos a la Cotización
+                    </h2>
+
+                    <!-- Inline Picker from Catalog (Search and Select) -->
+                    <div>
+                        <label class="block text-[10px] font-bold text-textMuted uppercase mb-1">Buscar en el Catálogo de REDSIN</label>
+                        <div class="relative">
+                            <select id="catalog-select" onchange="onCatalogSelectChange()" class="w-full bg-darkCanvas border border-soft text-textLight rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:border-redBtn scrollbar-hide">
+                                <option value="">-- Selecciona un equipo predeterminado --</option>
+                                <!-- Categories and Options dynamically loaded -->
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="border-t border-soft/50 my-1"></div>
+
+                    <!-- Custom Details panel (can override prices/quantities) -->
+                    <div class="grid grid-cols-1 md:grid-cols-12 gap-3">
+                        <div class="md:col-span-6">
+                            <label class="block text-[10px] font-bold text-textMuted uppercase mb-1">Nombre del Dispositivo / Servicio</label>
+                            <input type="text" id="item-name" placeholder="Ej. Instalación de DVR..." class="w-full bg-darkCanvas border border-soft text-textLight rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-redBtn">
+                        </div>
+                        <div class="md:col-span-3">
+                            <label class="block text-[10px] font-bold text-textMuted uppercase mb-1">Categoría</label>
+                            <select id="item-category" class="w-full bg-darkCanvas border border-soft text-textLight rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-redBtn">
+                                <option value="CCTV">CCTV</option>
+                                <option value="Alarma">Alarma</option>
+                                <option value="Acceso">Acceso</option>
+                                <option value="Redes">Redes</option>
+                                <option value="Incendio">Incendio</option>
+                                <option value="Mano de Obra">Mano de Obra</option>
+                                <option value="Otros">Otros</option>
+                            </select>
+                        </div>
+                        <div class="md:col-span-3">
+                            <label class="block text-[10px] font-bold text-textMuted uppercase mb-1">Costo Unitario ($ MX)</label>
+                            <input type="number" id="item-price" step="0.01" value="0.00" class="w-full bg-darkCanvas border border-soft text-textLight rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-redBtn">
+                        </div>
+                        <div class="md:col-span-4">
+                            <label class="block text-[10px] font-bold text-textMuted uppercase mb-1">Cantidad</label>
+                            <div class="flex items-center bg-darkCanvas border border-soft rounded-lg overflow-hidden">
+                                <button onclick="adjustQty(-1)" class="px-3 py-2 hover:bg-navySecondary text-textMuted hover:text-textLight">-</button>
+                                <input type="number" id="item-qty" value="1" min="1" class="w-full bg-transparent text-center text-textLight text-sm focus:outline-none">
+                                <button onclick="adjustQty(1)" class="px-3 py-2 hover:bg-navySecondary text-textMuted hover:text-textLight">+</button>
+                            </div>
+                        </div>
+                        <div class="md:col-span-8 flex items-end">
+                            <button onclick="addItem()" class="w-full bg-redBtn hover:bg-red-700 text-white font-bold py-2 px-4 rounded-lg text-sm flex items-center justify-center gap-1.5 transition-colors shadow">
+                                <i data-lucide="plus" class="w-4 h-4"></i> Añadir a la Cotización
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Parameters (IVA, Descuento, Método de pago, Observaciones) -->
+                <div class="bg-navySecondary border border-soft rounded-xl p-5 shadow-md flex flex-col gap-4">
+                    <h2 class="title-font text-md font-bold text-textLight flex items-center gap-2">
+                        <i data-lucide="settings-2" class="text-redBtn w-4 h-4"></i>
+                        Ajustes de Facturación y Notas
+                    </h2>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-[10px] font-bold text-textMuted uppercase mb-1">Descuento Especial (%)</label>
+                            <input type="number" id="quote-discount" value="0" min="0" max="100" class="w-full bg-darkCanvas border border-soft text-textLight rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-redBtn">
+                        </div>
+                        <div>
+                            <label class="block text-[10px] font-bold text-textMuted uppercase mb-1">Impuesto IVA (%)</label>
+                            <input type="number" id="quote-tax" value="16" min="0" max="100" class="w-full bg-darkCanvas border border-soft text-textLight rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-redBtn">
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="block text-[10px] font-bold text-textMuted uppercase mb-1">Método de Pago Seleccionado</label>
+                        <div class="flex gap-4 mt-1 bg-darkCanvas border border-soft p-2.5 rounded-lg">
+                            <label class="flex items-center gap-2 cursor-pointer text-xs">
+                                <input type="radio" name="payment_method_input" value="EFECTIVO" checked class="accent-redBtn">
+                                EFECTIVO
+                            </label>
+                            <label class="flex items-center gap-2 cursor-pointer text-xs">
+                                <input type="radio" name="payment_method_input" value="TARJETA" class="accent-redBtn">
+                                TARJETA
+                            </label>
+                            <label class="flex items-center gap-2 cursor-pointer text-xs">
+                                <input type="radio" name="payment_method_input" value="OTRO" class="accent-redBtn">
+                                OTRO
+                            </label>
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="block text-[10px] font-bold text-textMuted uppercase mb-1">Observaciones / notas al cliente</label>
+                        <textarea id="quote-notes" rows="2" placeholder="Ej. Cotización de cerco eléctrico. Los precios pueden variar según tipo de cambio física." class="w-full bg-darkCanvas border border-soft text-textLight rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-redBtn resize-none"></textarea>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right Side Preview: Quick summary details & Actions -->
+            <div class="lg:col-span-5 flex flex-col gap-6">
+                <!-- Equipment List Tracker -->
+                <div class="bg-navySecondary border border-soft rounded-xl p-5 shadow-md flex flex-col gap-4 min-h-[300px]">
+                    <div class="flex items-center justify-between">
+                        <h3 class="title-font text-sm font-bold text-textLight flex items-center gap-2">
+                            <i data-lucide="shopping-cart" class="text-redBtn w-4 h-4"></i>
+                            Equipos Agregados
+                        </h3>
+                        <span id="items-indicator" class="text-xs bg-darkCanvas border border-soft text-textLight px-2 py-0.5 rounded-full font-bold">0 ítems</span>
+                    </div>
+
+                    <!-- Items container list -->
+                    <div id="added-items-list" class="flex-1 overflow-y-auto max-h-[300px] flex flex-col gap-2 scrollbar-hide">
+                        <!-- Dynamic lines are rendered here -->
+                        <div class="text-center text-textMuted py-16 flex flex-col items-center justify-center gap-2">
+                            <i data-lucide="cloud-lightning" class="w-10 h-10 opacity-30 text-redBtn"></i>
+                            <p class="text-xs">No hay equipos agregados todavía.</p>
+                            <p class="text-[10px]">Utiliza el catálogo de la izquierda.</p>
+                        </div>
+                    </div>
+
+                    <!-- Financial calculation breakdown -->
+                    <div class="border-t border-soft/50 pt-4 flex flex-col gap-1.5 text-xs text-textLight">
+                        <div class="flex justify-between text-textMuted">
+                            <span>Subtotal:</span>
+                            <span id="summary-subtotal">$0.00</span>
+                        </div>
+                        <div id="summary-discount-row" class="flex justify-between text-red-400 hidden">
+                            <span>Descuento Especial:</span>
+                            <span id="summary-discount">-$0.00</span>
+                        </div>
+                        <div class="flex justify-between text-textMuted">
+                            <span>IVA (16%):</span>
+                            <span id="summary-tax">$0.00</span>
+                        </div>
+                        <div class="flex justify-between text-base font-black border-t border-soft/30 pt-2 text-textLight mt-1">
+                            <span>Total Estimado:</span>
+                            <span id="summary-total" class="text-redBtn">$0.00</span>
+                        </div>
+                    </div>
+
+                    <!-- Save & Print Buttons -->
+                    <div class="mt-2 flex flex-col gap-2">
+                        <button onclick="saveAndCompileQuote()" class="w-full bg-redBtn hover:bg-red-700 text-white font-bold py-3 rounded-lg text-sm flex items-center justify-center gap-2 transition-colors shadow">
+                            <i data-lucide="save" class="w-4 h-4"></i> Guardar Presupuesto
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- SECTION 2: LISTA DE HISTORIAL (no-print) -->
+        <div id="sec-lista" class="no-print hidden max-w-4xl mx-auto flex flex-col gap-6">
+            <div class="bg-navySecondary border border-soft rounded-xl p-5 shadow-md">
+                <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
+                    <div>
+                        <h2 class="title-font text-lg font-black text-textLight">Historial de Propuestas Guardadas</h2>
+                        <p class="text-xs text-textMuted">Administra, visualiza en el formato oficial, imprime o envía tus proyectos.</p>
+                    </div>
+                    <div class="relative w-full md:w-64">
+                        <input type="text" id="search-history" oninput="renderHistoryList()" placeholder="Buscar por cliente o folio..." class="w-full bg-darkCanvas border border-soft text-textLight rounded-lg px-3 py-1.5 pl-8 text-xs focus:outline-none focus:border-redBtn">
+                        <i data-lucide="search" class="w-3.5 h-3.5 text-textMuted absolute left-2.5 top-2.5"></i>
+                    </div>
+                </div>
+
+                <div id="history-container" class="flex flex-col gap-3">
+                    <!-- Historical rows render dynamically here -->
+                </div>
+            </div>
+        </div>
+
+        <!-- PRINT COMPONENT CONTAINER VIEW ON SCREEN (Has separate white background sheet style) -->
+        <div id="print-sheet-wrapper" class="hidden mt-8 max-w-3xl mx-auto no-print">
+            <div class="flex justify-between items-center bg-navySecondary border-b border-soft p-4 rounded-t-xl mb-0.5">
+                <h3 class="title-font font-bold text-xs text-textMuted flex items-center gap-1.5">
+                    <i data-lucide="eye" class="text-redBtn w-4 h-4"></i>
+                    Vista Previa del Formato Imprimible
+                </h3>
+                <div class="flex gap-2">
+                    <button onclick="window.print()" class="bg-redBtn hover:bg-red-700 text-white font-bold px-3 py-1.5 rounded-lg text-xs flex items-center gap-1 shadow transition-colors">
+                        <i data-lucide="printer" class="w-3.5 h-3.5"></i>
+                        Imprimir / Guardar PDF
+                    </button>
+                    <button onclick="emailActiveQuote()" class="bg-navySecondary border border-soft hover:bg-navySecondary/80 text-textLight px-3 py-1.5 rounded-lg text-xs flex items-center gap-1 transition-colors">
+                        <i data-lucide="mail" class="w-3.5 h-3.5 text-redBtn"></i>
+                        Enviar Correo
+                    </button>
+                    <button onclick="closePrintPreview()" class="text-textMuted hover:text-textLight px-2 py-1"><i data-lucide="x" class="w-4 h-4"></i></button>
+                </div>
+            </div>
+        </div>
+
+        <!-- PHYSICAL PAPER SHEET IN HIGH FIDELITY EXACT COPY -->
+        <div id="printable-area" class="printable-sheet bg-white p-6 md:p-10 border border-soft/30 shadow-2xl rounded-b-xl max-w-3xl mx-auto text-navyPrimary text-[12px] leading-relaxed hidden">
+            <!-- Header Row -->
+            <div class="flex justify-between items-center gap-4">
+                <!-- Branding -->
+                <div class="flex items-center gap-3">
+                    <!-- Exact vector representation matching android implementation -->
+                   <img src="/img/Logo_Azul.png" alt="Mi Logo" class="w-10 h-10 object-contain" />
+                    <div>
+                        <h1 class="font-extrabold text-[#0F172A] text-2xl tracking-tight leading-none">REDSIN</h1>
+                        <p class="text-[9px] font-bold text-[#64748B] tracking-widest uppercase mt-0.5 leading-none">SEGURIDAD ELECTRÓNICA</p>
+                    </div>
+                </div>
+
+                <!-- Folio right box -->
+                <div class="text-right">
+                    <h2 class="font-black text-redBtn tracking-tight text-xl mb-1.5">COTIZACIÓN</h2>
+                    <table class="border-collapse border border-slate-300 w-44 inline-table text-[10px]">
+                        <tr>
+                            <td class="bg-gray-50 border border-slate-300 font-bold px-2 py-0.5 text-slate-500 w-16">FOLIO</td>
+                            <td class="border border-slate-300 font-extrabold text-[#0F172A] px-2 py-0.5" id="p-folio">CT-0001</td>
+                        </tr>
+                        <tr>
+                            <td class="bg-gray-50 border border-slate-300 font-bold px-2 py-0.5 text-slate-500">FECHA</td>
+                            <td class="border border-slate-300 font-semibold text-[#0F172A] px-2 py-0.5" id="p-date">29/05/2026</td>
+                        </tr>
+                    </table>
+                    <p class="text-[9px] font-black text-navyPrimary mt-1">CONTACTO: 6676112105</p>
+                </div>
+            </div>
+
+            <!-- CLIENT RED BANNER -->
+            <div class="bg-redBtn text-white font-extrabold text-center py-1 mt-5 tracking-[0.1em] text-xs">
+                CLIENTE
+            </div>
+
+            <!-- Client detailed values -->
+            <div class="border border-slate-300 grid grid-cols-3 text-[10px] mt-0.5">
+                <div class="border-r border-slate-300 p-2">
+                    <span class="text-redBtn font-bold uppercase block text-[8px] leading-tight mb-0.5">Nombre:</span>
+                    <strong class="text-navyPrimary text-xs leading-none" id="p-client-name">Juan Pérez</strong>
+                </div>
+                <div class="border-r border-slate-300 p-2">
+                    <span class="text-redBtn font-bold uppercase block text-[8px] leading-tight mb-0.5">Teléfono:</span>
+                    <strong class="text-[#0F172A] text-xs leading-none" id="p-client-phone">6671234567</strong>
+                </div>
+                <div class="p-2">
+                    <span class="text-redBtn font-bold uppercase block text-[8px] leading-tight mb-0.5">Email:</span>
+                    <strong class="text-[#0F172A] text-xs leading-none block truncate" id="p-client-email">cliente@correo.com</strong>
+                </div>
+            </div>
+
+            <!-- Items Table -->
+            <table class="w-full mt-5 text-[10px] border-collapse">
+                <thead>
+                    <tr class="bg-navyPrimary text-white uppercase text-center font-bold text-[8px]">
+                        <th class="py-1 px-1 border border-slate-300 w-12">CANT</th>
+                        <th class="py-1 px-3 border border-slate-300 text-left">DESCRIPCIÓN</th>
+                        <th class="py-1 px-2 border border-slate-300 text-right w-24">COSTO UNIT</th>
+                        <th class="py-1 px-2 border border-slate-300 text-right w-24">SUBTOTAL</th>
+                    </tr>
+                </thead>
+                <tbody id="p-table-body" class="border border-slate-300">
+                    <!-- Dynamic lines will go here -->
+                </tbody>
+            </table>
+
+            <!-- Footnote / calculations splits -->
+            <div class="flex justify-between gap-6 items-start mt-4">
+                <!-- Limit notes -->
+                <div class="w-[50%] text-[8px] text-slate-500 leading-normal">
+                    precios sujetos al tipo de cambio actual, pueden ser cambiado sin previo aviso. la cotizacion es con la instalacion basica si se requiere tuberia aumentaria el costo.
+                </div>
+
+                <!-- Totals card -->
+                <table class="border-collapse border border-slate-300 text-[10px] w-52 inline-table">
+                    <tr>
+                        <td class="bg-gray-50 border border-slate-300 px-2 py-1 font-bold text-slate-500 w-24 uppercase">SUBTOTAL:</td>
+                        <td class="border border-slate-300 px-2 py-1 font-bold text-slate-800 text-right" id="p-subtotal">$0.00</td>
+                    </tr>
+                    <tr id="p-discount-row" class="hidden">
+                        <td class="bg-gray-50 border border-slate-300 px-2 py-1 font-bold text-slate-500 uppercase">DESCUENTO:</td>
+                        <td class="border border-slate-300 px-2 py-1 font-bold text-redBtn text-right" id="p-discount">-$0.00</td>
+                    </tr>
+                    <tr>
+                        <td class="bg-gray-50 border border-slate-300 px-2 py-1 font-bold text-slate-500 uppercase">IVA (16%):</td>
+                        <td class="border border-slate-300 px-2 py-1 font-bold text-slate-800 text-right" id="p-tax">$0.00</td>
+                    </tr>
+                    <tr class="bg-redBtn/5">
+                        <td class="border border-slate-300 px-2 py-1 font-black text-redBtn uppercase text-xs">TOTAL:</td>
+                        <td class="border border-slate-300 px-2 py-1 font-black text-redBtn text-right text-xs" id="p-total">$0.00</td>
+                    </tr>
+                </table>
+            </div>
+
+            <!-- PAYMENT METHOD -->
+            <div class="border border-slate-300 p-3 mt-4">
+                <span class="text-slate-500 font-bold block text-[8px] uppercase tracking-wider mb-1">MÉTODO DE PAGO:</span>
+                <div class="flex gap-4 items-center">
+                    <label class="flex items-center gap-1.5 text-[9px] pointer-events-none">
+                        <input type="checkbox" id="p-pay-efectivo" class="accent-redBtn rounded" readonly> EFECTIVO
+                    </label>
+                    <label class="flex items-center gap-1.5 text-[9px] pointer-events-none">
+                        <input type="checkbox" id="p-pay-tarjeta" class="accent-redBtn rounded" readonly> TARJETA
+                    </label>
+                    <label class="flex items-center gap-1.5 text-[9px] pointer-events-none">
+                        <input type="checkbox" id="p-pay-otro" class="accent-redBtn rounded" readonly> OTRO
+                    </label>
+                </div>
+            </div>
+
+            <!-- OBSERVACIONES -->
+            <div class="mt-4">
+                <div class="bg-navyPrimary text-white text-center font-bold text-[8px] py-0.5 tracking-wider uppercase">
+                    OBSERVACIONES
+                </div>
+                <div class="border border-slate-300 p-3 text-[10px] text-slate-800 leading-normal min-h-[50px] whitespace-pre-line" id="p-notes">
+                    Cotizacion de Cerco electrico, en caso de requerir factura seria mas IVA
+                </div>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- FOOTER INFO / HINTS -->
+    <footer class="no-print mt-12 text-center text-textMuted text-xs max-w-xl mx-auto px-4 flex flex-col gap-1.5">
+        <p>© 2026 REDSIN. Todos los derechos reservados.</p>   
+    </footer>
+
+    <!-- LOGIC INTEGRATION SCRIPT -->
+    <script>
+        // Preset catalog items to populate selects immediately
+        const catalogPresets = [
+            { id: 1, name: "Cámara Domo IP FullColor 4MP (Interior/Exterior)", category: "CCTV", defaultPrice: 65.0 },
+            { id: 2, name: "Cámara Tipo Bala IP Metal IP67 4MP", category: "CCTV", defaultPrice: 75.0 },
+            { id: 3, name: "Grabador NVR de 8 Canales PoE 4K H.265+", category: "CCTV", defaultPrice: 180.0 },
+            { id: 4, name: "Disco Duro Western Digital Purple de 2TB", category: "CCTV", defaultPrice: 90.0 },
+            { id: 5, name: "Cámara Turret IP PTZ 4MP con Zoom Digital", category: "CCTV", defaultPrice: 145.0 },
+            { id: 6, name: "Panel de Alarma Híbrido DSC / Powerseries (8 Zonas)", category: "Alarma", defaultPrice: 130.0 },
+            { id: 7, name: "Teclado LCD Alfanumérico Cableado para Central", category: "Alarma", defaultPrice: 55.0 },
+            { id: 8, name: "Censor Infrarrojo PIR Antimascotas DSC", category: "Alarma", defaultPrice: 22.0 },
+            { id: 9, name: "Sensor Magnético Pesado para Portón Comercial", category: "Alarma", defaultPrice: 18.0 },
+            { id: 10, name: "Sirena Exterior de Alta Potencia de 30W con Gabinete", category: "Alarma", defaultPrice: 35.0 },
+            { id: 11, name: "Lector de Tarjetas RFID y Clave Independiente IP65", category: "Acceso", defaultPrice: 95.0 },
+            { id: 12, name: "Cerradura Magnética de 600 Libras con Soporte ZL", category: "Acceso", defaultPrice: 80.0 },
+            { id: 13, name: "Botón de Salida Infrarrojo Sin Contacto (No Touch)", category: "Acceso", defaultPrice: 20.0 },
+            { id: 14, name: "Bobina de Cable UTP Categoría 6 100% Cobre (305m)", category: "Redes", defaultPrice: 160.0 },
+            { id: 15, name: "Gabinete Metálico de Pared para Servidor/NVR (4U)", category: "Redes", defaultPrice: 75.0 },
+            { id: 16, name: "Switch Industrial PoE Gigabits de 8 Puertos", category: "Redes", defaultPrice: 85.0 },
+            { id: 17, name: "Mano de Obra Profesional Instalación - Jornada Completa", category: "Mano de Obra", defaultPrice: 150.0 }
+        ];
+
+        // Active state of current draft quote items
+        let draftItems = [];
+        let quotesList = [];
+        let selectedQuoteForPrint = null;
+
+        // Initialize App
+        window.addEventListener('DOMContentLoaded', () => {
+            initCatalogSelect();
+            loadFromLocalStorage();
+            updateDraftTotals();
+            lucide.createIcons();
+        });
+
+        // Initialize catalog search options
+        function initCatalogSelect() {
+            const selectEl = document.getElementById('catalog-select');
+            
+            // Group presets by category
+            const grouped = {};
+            catalogPresets.forEach(item => {
+                if (!grouped[item.category]) grouped[item.category] = [];
+                grouped[item.category].push(item);
+            });
+
+            for (const cat in grouped) {
+                const groupOpt = document.createElement('optgroup');
+                groupOpt.label = cat;
+                
+                grouped[cat].forEach(item => {
+                    const opt = document.createElement('option');
+                    opt.value = item.id;
+                    opt.textContent = `${item.name} - $${item.defaultPrice.toFixed(2)}`;
+                    groupOpt.appendChild(opt);
+                });
+                selectEl.appendChild(groupOpt);
+            }
+        }
+
+        // On Catalog drop-down changed
+        function onCatalogSelectChange() {
+            const val = document.getElementById('catalog-select').value;
+            if (!val) return;
+
+            const selected = catalogPresets.find(p => p.id == val);
+            if (selected) {
+                document.getElementById('item-name').value = selected.name;
+                document.getElementById('item-category').value = selected.category;
+                document.getElementById('item-price').value = selected.defaultPrice;
+                document.getElementById('item-qty').value = 1;
+            }
+        }
+
+        // Add item to draft
+        function addItem() {
+            const name = document.getElementById('item-name').value.trim();
+            const category = document.getElementById('item-category').value;
+            const price = parseFloat(document.getElementById('item-price').value) || 0;
+            const qty = parseInt(document.getElementById('item-qty').value) || 1;
+
+            if (!name) {
+                alert("Por favor escribe el nombre del equipo.");
+                return;
+            }
+
+            // Push to items array
+            draftItems.push({
+                name: name,
+                category: category,
+                unitPrice: price,
+                quantity: qty
+            });
+
+            // Reset specific fields
+            document.getElementById('item-name').value = '';
+            document.getElementById('item-price').value = '0.00';
+            document.getElementById('item-qty').value = '1';
+            document.getElementById('catalog-select').value = '';
+
+            updateDraftTotals();
+        }
+
+        // Adjust input quantity counter
+        function adjustQty(amount) {
+            const el = document.getElementById('item-qty');
+            let current = parseInt(el.value) || 1;
+            current = Math.max(1, current + amount);
+            el.value = current;
+        }
+
+        // Delete item from draft index
+        function deleteDraftItem(index) {
+            draftItems.splice(index, 1);
+            updateDraftTotals();
+        }
+
+        // Calculate and refresh draft view list
+        function updateDraftTotals() {
+            const listEl = document.getElementById('added-items-list');
+            const itemsIndicator = document.getElementById('items-indicator');
+            
+            // Empty lists check
+            if (draftItems.length === 0) {
+                listEl.innerHTML = `
+                    <div class="text-center text-textMuted py-16 flex flex-col items-center justify-center gap-2">
+                        <i data-lucide="cloud-lightning" class="w-10 h-10 opacity-30 text-redBtn"></i>
+                        <p class="text-xs">No hay equipos agregados todavía.</p>
+                        <p class="text-[10px]">Utiliza el catálogo de la izquierda.</p>
+                    </div>
+                `;
+                itemsIndicator.textContent = "0 ítems";
+                document.getElementById('summary-subtotal').textContent = "$0.00";
+                document.getElementById('summary-discount-row').classList.add('hidden');
+                document.getElementById('summary-tax').textContent = "$0.00";
+                document.getElementById('summary-total').textContent = "$0.00";
+                lucide.createIcons();
+                return;
+            }
+
+            itemsIndicator.textContent = `${draftItems.length} ítems`;
+            listEl.innerHTML = '';
+
+            let subtotal = 0;
+            draftItems.forEach((item, idx) => {
+                const totalItem = item.unitPrice * item.quantity;
+                subtotal += totalItem;
+
+                const line = document.createElement('div');
+                line.className = "flex justify-between items-center bg-darkCanvas border border-soft/50 p-2.5 rounded-lg text-xs gap-3";
+                line.innerHTML = `
+                    <div class="flex-1">
+                        <h4 class="font-bold text-textLight">${item.name}</h4>
+                        <div class="flex items-center gap-2 text-[10px] text-textMuted mt-0.5">
+                            <span class="bg-navySecondary border border-soft px-1 rounded text-redBtn">${item.category}</span>
+                            <span>Cant: ${item.quantity} · Unitario: $${item.unitPrice.toFixed(2)}</span>
+                        </div>
+                    </div>
+                    <div class="text-right flex items-center gap-3">
+                        <strong class="text-securityAmber">$${totalItem.toFixed(2)}</strong>
+                        <button onclick="deleteDraftItem(${idx})" class="text-textMuted hover:text-redBtn p-1 transition-colors">
+                            <i data-lucide="x" class="w-3.5 h-3.5"></i>
+                        </button>
+                    </div>
+                `;
+                listEl.appendChild(line);
+            });
+
+            // Mathematics Math calculation
+            const discountPercent = parseFloat(document.getElementById('quote-discount').value) || 0;
+            const discountAmount = subtotal * (discountPercent / 100);
+            const netAmount = subtotal - discountAmount;
+            
+            const taxPercent = parseFloat(document.getElementById('quote-tax').value) || 0;
+            const taxAmount = netAmount * (taxPercent / 100);
+            const grandTotal = netAmount + taxAmount;
+
+            // Update UI outputs
+            document.getElementById('summary-subtotal').textContent = `$${subtotal.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+            
+            if (discountPercent > 0) {
+                document.getElementById('summary-discount-row').classList.remove('hidden');
+                document.getElementById('summary-discount').textContent = `-$${discountAmount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+            } else {
+                document.getElementById('summary-discount-row').classList.add('hidden');
+            }
+
+            document.getElementById('summary-tax').textContent = `$${taxAmount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+            document.getElementById('summary-total').textContent = `$${grandTotal.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+            
+            // Re-render Lucide icons for the newly added lines
+            lucide.createIcons();
+        }
+
+        // Live input updates logic
+        document.getElementById('quote-discount').addEventListener('input', updateDraftTotals);
+        document.getElementById('quote-tax').addEventListener('input', updateDraftTotals);
+
+        // CLEAR DRAFT Entirely
+        function clearDraft() {
+            if (confirm("¿Estás seguro de que deseas limpiar la información actual?")) {
+                draftItems = [];
+                document.getElementById('client-name').value = '';
+                document.getElementById('client-phone').value = '';
+                document.getElementById('client-email').value = '';
+                document.getElementById('quote-notes').value = '';
+                document.getElementById('quote-discount').value = '0';
+                document.getElementById('quote-tax').value = '16';
+                updateDraftTotals();
+            }
+        }
+
+        // SAVE AND COMPILE NEW QUOTE
+        function saveAndCompileQuote() {
+            const name = document.getElementById('client-name').value.trim();
+            if (!name) {
+                alert("Escribe el nombre del cliente por favor.");
+                return;
+            }
+            if (draftItems.length === 0) {
+                alert("Debes agregar al menos un equipo antes de guardar.");
+                return;
+            }
+
+            // Create quote entity structure
+            const activeMethod = document.querySelector('input[name="payment_method_input"]:checked').value;
+            const quoteId = quotesList.length > 0 ? Math.max(...quotesList.map(q => q.id)) + 1 : 1;
+            
+            const newQuote = {
+                id: quoteId,
+                clientName: name,
+                clientPhone: document.getElementById('client-phone').value.trim(),
+                clientEmail: document.getElementById('client-email').value.trim(),
+                date: new Date().getTime(),
+                discountPercent: parseFloat(document.getElementById('quote-discount').value) || 0,
+                taxPercent: parseFloat(document.getElementById('quote-tax').value) || 0,
+                notes: document.getElementById('quote-notes').value.trim(),
+                paymentMethod: activeMethod,
+                status: 'Pendiente', // Pendiente, Aceptado, Rechazado
+                items: [...draftItems]
+            };
+
+            quotesList.unshift(newQuote);
+            saveToLocalStorage();
+            alert(`¡Presupuesto guardado exitosamente con Folio: CT-${String(quoteId).padStart(4, '0')}!`);
+            
+            // Switch tab to list and load the printing visual
+            switchTab('lista');
+            viewPrintLayout(newQuote);
+        }
+
+        // Tab Switching Controls
+        function switchTab(tabId) {
+            const tabs = document.querySelectorAll('.tab-btn');
+            tabs.forEach(btn => {
+                btn.classList.remove('bg-redBtn', 'text-white');
+                btn.classList.add('text-textMuted', 'hover:text-textLight');
+            });
+
+            document.getElementById(`tab-${tabId}`).classList.add('bg-redBtn', 'text-white');
+            document.getElementById(`tab-${tabId}`).classList.remove('text-textMuted', 'hover:text-textLight');
+
+            if (tabId === 'crear') {
+                document.getElementById('sec-crear').classList.remove('hidden');
+                document.getElementById('sec-lista').classList.add('hidden');
+            } else {
+                document.getElementById('sec-crear').classList.add('hidden');
+                document.getElementById('sec-lista').classList.remove('hidden');
+                renderHistoryList();
+            }
+        }
+
+        // Render Historical list index
+        function renderHistoryList() {
+            const container = document.getElementById('history-container');
+            const query = document.getElementById('search-history').value.toLowerCase().trim();
+
+            const filtered = quotesList.filter(q => {
+                const client = q.clientName.toLowerCase();
+                const folio = `ct-${String(q.id).padStart(4, '0')}`;
+                return client.includes(query) || folio.includes(query);
+            });
+
+            if (filtered.length === 0) {
+                container.innerHTML = `
+                    <div class="text-center text-textMuted py-16 flex flex-col items-center justify-center gap-2">
+                        <i data-lucide="folder-open" class="w-10 h-10 opacity-30 text-redBtn"></i>
+                        <p class="text-xs">No se encontraron presupuestos en tu historial.</p>
+                    </div>
+                `;
+                lucide.createIcons();
+                return;
+            }
+
+            container.innerHTML = '';
+            filtered.forEach(q => {
+                const dateStr = new Date(q.date).toLocaleDateString('es-MX', { year: 'numeric', month: '2-digit', day: '2-digit' });
+                const folioStr = `CT-${String(q.id).padStart(4, '0')}`;
+                
+                // Quote financial calculations
+                let subtotal = q.items.reduce((acc, current) => acc + (current.unitPrice * current.quantity), 0);
+                let discountAmount = subtotal * (q.discountPercent / 100);
+                let taxAmount = (subtotal - discountAmount) * (q.taxPercent / 100);
+                let grandTotal = subtotal - discountAmount + taxAmount;
+
+                // Status banner color mappings
+                let statusClasses = "bg-yellow-500/15 border-yellow-500/30 text-yellow-400";
+                if (q.status === 'Aceptada' || q.status === 'Aceptado') statusClasses = "bg-green-500/15 border-green-500/30 text-green-400";
+                if (q.status === 'Rechazada' || q.status === 'Rechazado') statusClasses = "bg-red-500/15 border-red-500/30 text-red-500";
+
+                const line = document.createElement('div');
+                line.className = "bg-darkCanvas border border-soft rounded-lg p-4 flex flex-col md:flex-row justify-between items-start md:items-center gap-4 hover:border-redBtn/30 transition-all";
+                line.innerHTML = `
+                    <div class="flex-1">
+                        <div class="flex items-center gap-2">
+                            <span class="mono-font text-xs text-redBtn font-black">${folioStr}</span>
+                            <span class="text-textMuted text-[10px]">${dateStr}</span>
+                            <span class="border text-[9px] px-1.5 py-0.5 rounded font-black ${statusClasses}">${q.status}</span>
+                        </div>
+                        <h3 class="title-font text-sm font-bold text-textLight mt-1">${q.clientName}</h3>
+                        <p class="text-[10px] text-textMuted mt-0.5">
+                            ${q.items.length} equipos · Método: ${q.paymentMethod} · Total: <strong class="text-securityAmber">$${grandTotal.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</strong>
+                        </p>
+                    </div>
+                    <div class="flex flex-wrap gap-2 w-full md:w-auto">
+                        <button onclick='loadAndOpenHistQuote(${q.id})' class="bg-redBtn/10 hover:bg-redBtn text-redBtn hover:text-white border border-redBtn/30 px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 flex-1 md:flex-initial justify-center">
+                            <i data-lucide="eye" class="w-3.5 h-3.5"></i> Ver / Imprimir
+                        </button>
+                        
+                        <!-- Change status selector Dropdown -->
+                        <select onchange="updateHistoryStatus(${q.id}, this.value)" class="bg-navySecondary border border-soft text-textLight text-xs rounded-lg px-2 py-1.5 focus:outline-none flex-1 md:flex-initial">
+                            <option value="Pendiente" ${q.status === 'Pendiente' ? 'selected' : ''}>Pendiente</option>
+                            <option value="Aceptado" ${q.status === 'Aceptado' || q.status === 'Aceptada' ? 'selected' : ''}>Aceptado</option>
+                            <option value="Rechazado" ${q.status === 'Rechazado' || q.status === 'Rechazada' ? 'selected' : ''}>Rechazado</option>
+                        </select>
+
+                        <button onclick="deleteHistoryQuote(${q.id})" class="text-textMuted hover:text-red-500 border border-soft hover:border-red-500/30 p-2 rounded-lg transition-colors">
+                            <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+                        </button>
+                    </div>
+                `;
+                container.appendChild(line);
+            });
+
+            lucide.createIcons();
+        }
+
+        // Action loading a historical quote directly into printable visual sheet
+        function loadAndOpenHistQuote(id) {
+            const found = quotesList.find(q => q.id === id);
+            if (found) {
+                viewPrintLayout(found);
+            }
+        }
+
+        // Change quote status
+        function updateHistoryStatus(id, newStatus) {
+            const found = quotesList.find(q => q.id === id);
+            if (found) {
+                found.status = newStatus;
+                saveToLocalStorage();
+                renderHistoryList();
+            }
+        }
+
+        // Delete quote
+        function deleteHistoryQuote(id) {
+            if (confirm("¿Estás seguro de que deseas eliminar este presupuesto para siempre?")) {
+                quotesList = quotesList.filter(q => q.id !== id);
+                saveToLocalStorage();
+                renderHistoryList();
+            }
+        }
+
+        // HIGH FIDELITY PAPER SHEET RENDERING ENGINE
+        function viewPrintLayout(quote) {
+            selectedQuoteForPrint = quote;
+            
+            // Un-hide wrapper elements
+            document.getElementById('print-sheet-wrapper').classList.remove('hidden');
+            document.getElementById('printable-area').classList.remove('hidden');
+
+            // Set customer static typography fields
+            document.getElementById('p-folio').textContent = `CT-${String(quote.id).padStart(4, '0')}`;
+            document.getElementById('p-date').textContent = new Date(quote.date).toLocaleDateString('es-MX', { year: 'numeric', month: '2-digit', day: '2-digit' });
+            
+            document.getElementById('p-client-name').textContent = quote.clientName;
+            document.getElementById('p-client-phone').textContent = quote.clientPhone || "---";
+            document.getElementById('p-client-email').textContent = quote.clientEmail || "---";
+            
+            // Set observations notes
+            const defaultObs = "Cotizacion de Cerco electrico, en caso de requerir factura seria mas IVA";
+            document.getElementById('p-notes').textContent = quote.notes ? quote.notes : defaultObs;
+
+            // Set checkboxes for payment methods
+            const method = String(quote.paymentMethod).toUpperCase();
+            document.getElementById('p-pay-efectivo').checked = (method === 'EFECTIVO');
+            document.getElementById('p-pay-tarjeta').checked = (method === 'TARJETA');
+            document.getElementById('p-pay-otro').checked = (method === 'OTRO');
+
+            // Render table lines with empty whitespace padding lines representing carbon pad
+            const tbody = document.getElementById('p-table-body');
+            tbody.innerHTML = '';
+
+            let subtotal = 0;
+            quote.items.forEach(item => {
+                const totalLine = item.unitPrice * item.quantity;
+                subtotal += totalLine;
+
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td class="py-1 border border-slate-300 text-center font-bold text-navyPrimary">${item.quantity}</td>
+                    <td class="py-1 px-3 border border-slate-300 text-navyPrimary font-normal">${item.name}</td>
+                    <td class="py-1 px-2 border border-slate-300 text-right text-navyPrimary">$${item.unitPrice.toLocaleString('en-US', { minimumFractionDigits: 1, maximumFractionDigits: 1 })}</td>
+                    <td class="py-1 px-2 border border-slate-300 text-right text-navyPrimary font-bold">$${totalLine.toLocaleString('en-US', { minimumFractionDigits: 1, maximumFractionDigits: 1 })}</td>
+                `;
+                tbody.appendChild(tr);
+            });
+
+            // Blank rows representation (at least 3 empty visual filler rows matching physical pad format)
+            const emptyLines = Math.max(3, 8 - quote.items.size);
+            for (let i = 0; i < emptyLines; i++) {
+                const tr = document.createElement('tr');
+                tr.className = "h-[20px]";
+                tr.innerHTML = `
+                    <td class="border border-slate-300"></td>
+                    <td class="border border-slate-300"></td>
+                    <td class="border border-slate-300"></td>
+                    <td class="border border-slate-300"></td>
+                `;
+                tbody.appendChild(tr);
+            }
+
+            // Calculations
+            let discountAmount = subtotal * (quote.discountPercent / 100);
+            let netAmount = subtotal - discountAmount;
+            let taxAmount = netAmount * (quote.taxPercent / 100);
+            let grandTotal = netAmount + taxAmount;
+
+            // Totals representation table outputs
+            document.getElementById('p-subtotal').textContent = `$${(subtotal - discountAmount).toLocaleString('en-US', { minimumFractionDigits: 1, maximumFractionDigits: 1 })}`;
+            
+            const printDiscRow = document.getElementById('p-discount-row');
+            if (quote.discountPercent > 0) {
+                printDiscRow.classList.remove('hidden');
+                document.getElementById('p-discount').textContent = `-$${discountAmount.toLocaleString('en-US', { minimumFractionDigits: 1, maximumFractionDigits: 1 })}`;
+            } else {
+                printDiscRow.classList.add('hidden');
+            }
+
+            document.getElementById('p-tax').textContent = `$${taxAmount.toLocaleString('en-US', { minimumFractionDigits: 1, maximumFractionDigits: 1 })}`;
+            document.getElementById('p-total').textContent = `$${grandTotal.toLocaleString('en-US', { minimumFractionDigits: 1, maximumFractionDigits: 1 })}`;
+
+            // Auto-scroll to view sheet
+            document.getElementById('print-sheet-wrapper').scrollIntoView({ behavior: 'smooth' });
+        }
+
+        // Dismiss Paper Sheet Preview
+        function closePrintPreview() {
+            document.getElementById('print-sheet-wrapper').classList.add('hidden');
+            document.getElementById('printable-area').classList.add('hidden');
+            selectedQuoteForPrint = null;
+        }
+
+        // Email dispatch helper
+        function emailActiveQuote() {
+            if (!selectedQuoteForPrint) return;
+            const q = selectedQuoteForPrint;
+            const folioStr = `CT-${String(q.id).padStart(4, '0')}`;
+            const subject = encodeURIComponent(`Cotización REDSIN - Folio ${folioStr}`);
+            
+            // Build string representation description matching share layout
+            let body = `REDSIN SEGURIDAD ELECTRÓNICA\n`;
+            body += `===================================\n`;
+            body += `Folio de Cotización: ${folioStr}\n\n`;
+            body += `Cliente: ${q.clientName}\n`;
+            if (q.clientPhone) body += `Teléfono: ${q.clientPhone}\n`;
+            body += `Fecha: ${new Date(q.date).toLocaleDateString()}\n`;
+            body += `===================================\n\n`;
+            body += `Equipos Cotizados:\n`;
+            
+            let subtotal = 0;
+            q.items.forEach((item, idx) => {
+                const totalItem = item.unitPrice * item.quantity;
+                subtotal += totalItem;
+                body += `${idx + 1}. [${item.category}] ${item.name} x${item.quantity} - $${totalItem.toFixed(2)}\n`;
+            });
+
+            let discountAmount = subtotal * (q.discountPercent / 100);
+            let netAmount = subtotal - discountAmount;
+            let taxAmount = netAmount * (q.taxPercent / 100);
+            let grandTotal = netAmount + taxAmount;
+
+            body += `\nSubtotal: $${subtotal.toFixed(2)}\n`;
+            if (discountAmount > 0) body += `Descuento: -$${discountAmount.toFixed(2)}\n`;
+            body += `IVA (16%): $${taxAmount.toFixed(2)}\n`;
+            body += `TOTAL INVERSIÓN: $${grandTotal.toFixed(2)}\n`;
+            body += `===================================\n`;
+            body += `Método de pago: ${q.paymentMethod}\n`;
+            if (q.notes) body += `Observaciones: ${q.notes}\n`;
+
+            const mailtoUri = `mailto:${q.clientEmail}?subject=${subject}&body=${encodeURIComponent(body)}`;
+            window.location.href = mailtoUri;
+        }
+
+        // Storage helpers
+        function saveToLocalStorage() {
+            localStorage.setItem('redsin_quotes_data', JSON.stringify(quotesList));
+            document.getElementById('quote-count').textContent = quotesList.length;
+        }
+
+        function loadFromLocalStorage() {
+            const data = localStorage.getItem('redsin_quotes_data');
+            if (data) {
+                try {
+                    quotesList = JSON.parse(data);
+                    document.getElementById('quote-count').textContent = quotesList.length;
+                } catch (e) {
+                    quotesList = [];
+                }
+            }
+        }
+    </script>
+</body>
+</html>
